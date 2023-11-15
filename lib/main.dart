@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:game_locker_mobile/menu.dart';
+import 'package:game_locker_mobile/screens/menu.dart';
 
 void main() {
   runApp(const MyApp());

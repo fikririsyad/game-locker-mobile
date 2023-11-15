@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:game_locker_mobile/screens/shoplist_form.dart';
+import 'package:game_locker_mobile/widgets/left_drawer.dart';
 
 class MyHomePage extends StatelessWidget {
   MyHomePage({Key? key}) : super(key: key);
 
   final List<InventoryItem> items = [
-    InventoryItem("Lihat Item", Icons.checklist, Colors.red),
-    InventoryItem("Tambah Item", Icons.add_shopping_cart, Colors.green),
+    InventoryItem("View Items", Icons.checklist, Colors.red),
+    InventoryItem("Add Item", Icons.add_shopping_cart, Colors.green),
     InventoryItem("Logout", Icons.logout, Colors.blue),
   ];
 
@@ -17,6 +19,7 @@ class MyHomePage extends StatelessWidget {
           'Game Locker',
         ),
       ),
+      drawer: const LeftDrawer(),
       body: SingleChildScrollView(
         // Widget wrapper yang dapat discroll
         child: Padding(
@@ -82,7 +85,15 @@ class InventoryCard extends StatelessWidget {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(SnackBar(
-                content: Text("Kamu telah menekan tombol ${item.name}!")));
+                content: Text("You have clicked ${item.name} button!")));
+          // Navigate ke route yang sesuai (tergantung jenis tombol)
+          if (item.name == "Add Item") {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ShopFormPage(),
+                ));
+          }
         },
         child: Container(
           // Container untuk menyimpan Icon dan Text
