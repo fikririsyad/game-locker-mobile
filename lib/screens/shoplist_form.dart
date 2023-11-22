@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:game_locker_mobile/screens/menu.dart';
 import 'package:game_locker_mobile/widgets/left_drawer.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:provider/provider.dart';
 
 class ShopFormPage extends StatefulWidget {
   const ShopFormPage({super.key});
@@ -18,6 +23,8 @@ class _ShopFormPageState extends State<ShopFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    final request = context.watch<CookieRequest>();
+
     return Scaffold(
       appBar: AppBar(
         title: const Center(
@@ -163,36 +170,30 @@ class _ShopFormPageState extends State<ShopFormPage> {
                 style: ButtonStyle(
                   backgroundColor: MaterialStateProperty.all(Colors.indigo),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   if (_formKey.currentState!.validate()) {
-                    showDialog(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: const Text('Produk berhasil tersimpan'),
-                          content: SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Nama: $_name'),
-                                Text('Price: $_price'),
-                                Text('Amount: $_amount'),
-                                Text('Genre: $_genre'),
-                                Text('Description: $_description')
-                              ],
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              child: const Text('OK'),
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    );
+                    final response = await request.postJson(
+                        "https://fikri-risyad-tugas.pbp.cs.ui.ac.id/create-flutter/",
+                        jsonEncode(<String, String>{
+                          'name': _name,
+                          'price': _price.toString(),
+                          'amount': _amount.toString(),
+                          'genre': _genre,
+                          'description': _description,
+                        }));
+                    if (response['status'] == 'success') {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text("The item has been successfully saved!"),
+                      ));
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => MyHomePage()),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text("There's a mistake, please try again."),
+                      ));
+                    }
                     _formKey.currentState!.reset();
                   }
                 },

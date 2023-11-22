@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:game_locker_mobile/screens/list_item.dart';
 import 'package:game_locker_mobile/screens/menu.dart';
 import 'package:game_locker_mobile/screens/shoplist_form.dart';
 
@@ -58,6 +59,18 @@ class LeftDrawer extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => const ShopFormPage(),
                   ));
+            },
+          ),
+          // Kode ListTile Menu
+          ListTile(
+            leading: const Icon(Icons.shopping_basket),
+            title: const Text('Item List'),
+            onTap: () {
+              // Route menu ke halaman produk
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ItemPage()),
+              );
             },
           ),
         ],

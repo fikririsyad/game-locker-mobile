@@ -525,6 +525,406 @@ Pada tugas ini, elemen input yang dipakai pada form adalah `TextField` karena wi
     },
     ```
 
-1. Membuat berkas `shop_card.dart` di dalam direktori `lib/widgets` dan memindahkan kelas `InventoryItem` di berkas `menu.dart` ke berkas tersebut.
+1. Membuat berkas `inventory_card.dart` di dalam direktori `lib/widgets` dan memindahkan kelas `InventoryItem` di berkas `menu.dart` ke berkas tersebut.
 
 1. Memastikan impor pada setiap file sudah benar.
+
+## Tugas 9: Integrasi Layanan Web Django dengan Aplikasi Flutter
+
+### Apakah bisa kita melakukan pengambilan data JSON tanpa membuat model terlebih dahulu? Jika iya, apakah hal tersebut lebih baik daripada membuat model sebelum melakukan pengambilan data JSON?
+
+Ya, kita dapat menyiapkan struktur data seperti dictionary atau list untuk menyimpan data JSON. Menurut saya, metode ini kurang baik jika dibandingkan dengan membuat model. Karena dengan membuat model, semua data yang diperlukan sudah jelas dan tervalidasi sesuai dengan tipe datanya dan lebih mudah untuk digunakan.
+
+### Jelaskan fungsi dari CookieRequest dan jelaskan mengapa instance CookieRequest perlu untuk dibagikan ke semua komponen di aplikasi Flutter.
+
+CookieRequest adalah class yang digunakan untuk mengatur otentikasi aplikasi Flutter dengan cookies. Instance-nya perlu dibagikan ke semua komponen di aplikasi Flutter agar status login dan cookies tetap konsisten.
+
+### Jelaskan mekanisme pengambilan data dari JSON hingga dapat ditampilkan pada Flutter.
+
+1. Membuat model yang menyesuaikan dengan data json memanfaatkan website [Quicktype](http://app.quicktype.io/).
+1. Membuat sebuah fungsi `async` bernama `fetchItem()` yang di dalamnya terdapat `List` untuk menyimpan instance dari model dan sebuah loop yang dalam setiap iterasinya akan parsing data json ke model.
+1. Di dalam widget `FutureBuilder`, fungsi tersebut akan disertakan pada bagian `future: ` sehingga jika dipanggil akan ditampilkan dengan ListView.builder.
+
+### Jelaskan mekanisme autentikasi dari input data akun pada Flutter ke Django hingga selesainya proses autentikasi oleh Django dan tampilnya menu pada Flutter.
+
+1. User memasukkan username dan password pada LoginPage.
+1. Ketika klik tombol login, input tersebut akan dikirimkan ke Django untuk diautentikasi
+1. Kemudian akan mengembalikkan response hasil autentikasi, jika berhasil akan menampilkan HomePage, jika tidak akan berada di page yang sama
+
+### Sebutkan seluruh widget yang kamu pakai pada tugas ini dan jelaskan fungsinya masing-masing.
+
+1. FutureBuilder -> Membuat widget di dalamnya menjadi asynchronous
+1. ListView.builder -> Membuat daftar yang bisa di-scroll
+1. TextField -> Membuat widget untuk menerima input user
+1. ElevatedButton -> Membuat widget button
+1. Column -> Widget untuk mengatur posisi secara vertikal
+1. Navigator -> Widget untuk mengatur routing
+1. CircularProgressIndicator -> Membuat widget loading
+
+### Jelaskan bagaimana cara kamu mengimplementasikan checklist di atas secara step-by-step! (bukan hanya sekadar mengikuti tutorial).
+
+1. Memodifikasi projek Django untuk memungkinkan integrasi dengan flutter.
+1. Membuat `login.dart` untuk menampilkan halaman login:
+  ```
+  import 'package:game_locker_mobile/screens/menu.dart';
+  import 'package:flutter/material.dart';
+  import 'package:pbp_django_auth/pbp_django_auth.dart';
+  import 'package:provider/provider.dart';
+
+  void main() {
+    runApp(const LoginApp());
+  }
+
+  class LoginApp extends StatelessWidget {
+    const LoginApp({super.key});
+
+    @override
+    Widget build(BuildContext context) {
+      return MaterialApp(
+        title: 'Login',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: const LoginPage(),
+      );
+    }
+  }
+
+  class LoginPage extends StatefulWidget {
+    const LoginPage({super.key});
+
+    @override
+    _LoginPageState createState() => _LoginPageState();
+  }
+
+  class _LoginPageState extends State<LoginPage> {
+    final TextEditingController _usernameController = TextEditingController();
+    final TextEditingController _passwordController = TextEditingController();
+
+    @override
+    Widget build(BuildContext context) {
+      final request = context.watch<CookieRequest>();
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Login'),
+        ),
+        body: Container(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextField(
+                controller: _usernameController,
+                decoration: const InputDecoration(
+                  labelText: 'Username',
+                ),
+              ),
+              const SizedBox(height: 12.0),
+              TextField(
+                controller: _passwordController,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 24.0),
+              ElevatedButton(
+                onPressed: () async {
+                  String username = _usernameController.text;
+                  String password = _passwordController.text;
+
+                  // Cek kredensial
+                  // TODO: Ganti URL dan jangan lupa tambahkan trailing slash (/) di akhir URL!
+                  // Untuk menyambungkan Android emulator dengan Django pada localhost,
+                  // gunakan URL http://10.0.2.2/
+                  final response = await request.login(
+                      "https://fikri-risyad-tugas.pbp.cs.ui.ac.id/auth/login/", {
+                    'username': username,
+                    'password': password,
+                  });
+
+                  if (request.loggedIn) {
+                    String message = response['message'];
+                    String uname = response['username'];
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => MyHomePage()),
+                    );
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(
+                          SnackBar(content: Text("$message Welcome, $uname.")));
+                  } else {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Login failed'),
+                        content: Text(response['message']),
+                        actions: [
+                          TextButton(
+                            child: const Text('OK'),
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Login'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+  ```
+1. Membuat berkas model `item.dart` di `lib/models` dengan memanfaatkan website [Quicktype](http://app.quicktype.io/).
+  ```
+  // To parse this JSON data, do
+  //
+  //     final item = itemFromJson(jsonString);
+
+  import 'dart:convert';
+
+  List<Item> itemFromJson(String str) =>
+      List<Item>.from(json.decode(str).map((x) => Item.fromJson(x)));
+
+  String itemToJson(List<Item> data) =>
+      json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
+
+  class Item {
+    Model model;
+    int pk;
+    Fields fields;
+
+    Item({
+      required this.model,
+      required this.pk,
+      required this.fields,
+    });
+
+    factory Item.fromJson(Map<String, dynamic> json) => Item(
+          model: modelValues.map[json["model"]]!,
+          pk: json["pk"],
+          fields: Fields.fromJson(json["fields"]),
+        );
+
+    Map<String, dynamic> toJson() => {
+          "model": modelValues.reverse[model],
+          "pk": pk,
+          "fields": fields.toJson(),
+        };
+  }
+
+  class Fields {
+    int user;
+    String name;
+    int amount;
+    String description;
+    int price;
+    String genre;
+    DateTime dateAdded;
+
+    Fields({
+      required this.user,
+      required this.name,
+      required this.amount,
+      required this.description,
+      required this.price,
+      required this.genre,
+      required this.dateAdded,
+    });
+
+    factory Fields.fromJson(Map<String, dynamic> json) => Fields(
+          user: json["user"],
+          name: json["name"],
+          amount: json["amount"],
+          description: json["description"],
+          price: json["price"],
+          genre: json["genre"],
+          dateAdded: DateTime.parse(json["date_added"]),
+        );
+
+    Map<String, dynamic> toJson() => {
+          "user": user,
+          "name": name,
+          "amount": amount,
+          "description": description,
+          "price": price,
+          "genre": genre,
+          "date_added":
+              "${dateAdded.year.toString().padLeft(4, '0')}-${dateAdded.month.toString().padLeft(2, '0')}-${dateAdded.day.toString().padLeft(2, '0')}",
+        };
+  }
+
+  enum Model { MAIN_ITEM }
+
+  final modelValues = EnumValues({"main.item": Model.MAIN_ITEM});
+
+  class EnumValues<T> {
+    Map<String, T> map;
+    late Map<T, String> reverseMap;
+
+    EnumValues(this.map);
+
+    Map<T, String> get reverse {
+      reverseMap = map.map((k, v) => MapEntry(v, k));
+      return reverseMap;
+    }
+  }
+  ```
+1. Membuat berkas `list_item.dart` di `lib/screens` yang akan menampilkan item yang sudah disimpan di Django.
+  ```
+  import 'package:flutter/material.dart';
+  import 'package:game_locker_mobile/screens/detail_item.dart';
+  import 'package:http/http.dart' as http;
+  import 'dart:convert';
+  import 'package:game_locker_mobile/models/item.dart';
+  import 'package:game_locker_mobile/widgets/left_drawer.dart';
+
+  class ItemPage extends StatefulWidget {
+    const ItemPage({Key? key}) : super(key: key);
+
+    @override
+    _ItemPageState createState() => _ItemPageState();
+  }
+
+  class _ItemPageState extends State<ItemPage> {
+    Future<List<Item>> fetchItem() async {
+      // TODO: Ganti URL dan jangan lupa tambahkan trailing slash (/) di akhir URL!
+      var url = Uri.parse('https://fikri-risyad-tugas.pbp.cs.ui.ac.id/json/');
+      var response = await http.get(
+        url,
+        headers: {"Content-Type": "application/json"},
+      );
+
+      // melakukan decode response menjadi bentuk json
+      var data = jsonDecode(utf8.decode(response.bodyBytes));
+
+      // melakukan konversi data json menjadi object Item
+      List<Item> list_item = [];
+      for (var d in data) {
+        if (d != null) {
+          list_item.add(Item.fromJson(d));
+        }
+      }
+      return list_item;
+    }
+
+    @override
+    Widget build(BuildContext context) {
+      return Scaffold(
+          appBar: AppBar(
+            title: const Text('Item'),
+          ),
+          drawer: const LeftDrawer(),
+          body: FutureBuilder(
+              future: fetchItem(),
+              builder: (context, AsyncSnapshot snapshot) {
+                if (snapshot.data == null) {
+                  return const Center(child: CircularProgressIndicator());
+                } else {
+                  if (!snapshot.hasData) {
+                    return const Column(
+                      children: [
+                        Text(
+                          "There is no item data",
+                          style:
+                              TextStyle(color: Color(0xff59A5D8), fontSize: 20),
+                        ),
+                        SizedBox(height: 8),
+                      ],
+                    );
+                  } else {
+                    return ListView.builder(
+                        itemCount: snapshot.data!.length,
+                        itemBuilder: (_, index) => InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => DetailItemPage(
+                                          item: snapshot.data![index])));
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                              padding: const EdgeInsets.all(20.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "${snapshot.data![index].fields.name}",
+                                    style: const TextStyle(
+                                      fontSize: 18.0,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text("${snapshot.data![index].fields.price}"),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                      "${snapshot.data![index].fields.description}")
+                                ],
+                              ),
+                            )));
+                  }
+                }
+              }));
+    }
+  }
+  ```
+1. Membuat berkas `detail_item.dart` di `lib/screens` dan diisi dengan kode berikut:
+  ```
+  import 'package:flutter/material.dart';
+  import 'package:game_locker_mobile/models/item.dart';
+
+  class DetailItemPage extends StatelessWidget {
+    final Item item;
+
+    DetailItemPage({required this.item});
+
+    @override
+    Widget build(BuildContext context) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            item.fields.name,
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                item.fields.name,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 10),
+              Text("Price: ${item.fields.price}"),
+              const SizedBox(height: 10),
+              Text("Amount: ${item.fields.amount}"),
+              const SizedBox(height: 10),
+              Text("Genre: ${item.fields.genre}"),
+              const SizedBox(height: 10),
+              Text("Description : ${item.fields.description}"),
+              ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: Text('Back'))
+            ],
+          ),
+        ),
+      );
+    }
+  }
+  ```
